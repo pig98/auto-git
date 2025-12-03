@@ -460,6 +460,38 @@ auto-git -v
 brew services edit auto-git
 ```
 
+#### 清理 Homebrew 缓存（如果重新安装后版本信息不对）
+
+如果修改了 Formula 后重新安装，但版本信息还是旧的，可能是 Homebrew 缓存问题：
+
+```bash
+# 1. 更新 tap（获取最新的 Formula）
+brew update
+
+# 2. 卸载旧版本
+brew uninstall auto-git
+
+# 3. 清理缓存和下载的源码包
+brew cleanup auto-git
+rm -rf $(brew --cache)/auto-git-*
+
+# 4. 强制重新安装（从源码编译）
+brew install --force --build-from-source auto-git
+
+# 5. 验证版本信息
+auto-git -v
+```
+
+或者更彻底的清理方式：
+```bash
+# 完全清理并重新安装
+brew uninstall auto-git
+brew cleanup -s auto-git
+brew update
+brew install --build-from-source auto-git
+auto-git -v
+```
+
 ### Formula 管理说明
 
 - **源码仓库中的 `Formula/` 目录**：仅作为模板/参考，不会被 Homebrew 使用
