@@ -355,6 +355,28 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
+**重新发布（如果 tag 已存在）**：
+
+如果需要重新触发发布（比如修复了 workflow 或 Formula 问题），可以删除并重新创建 tag：
+
+```bash
+# 删除远程 tag
+git push origin --delete v0.1.0
+
+# 删除本地 tag（可选）
+git tag -d v0.1.0
+
+# 重新创建并推送 tag
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+或者创建新的版本号：
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
 GitHub Actions 会自动：
 - 编译并测试程序
 - 等待 GitHub 生成源码包（GitHub 在创建 tag 时会自动生成）
