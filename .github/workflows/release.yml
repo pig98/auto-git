@@ -105,12 +105,17 @@ jobs:
           echo "Copying Formula template from source repository..."
           cp "$FORMULA_SOURCE" "$FORMULA_TARGET"
           
-          # Step 2: Update version-specific variables (version, url, sha256)
+          # Step 2: Get commit ID from tag
+          COMMIT_ID=$(git rev-parse --short HEAD)
+          echo "Commit ID: $COMMIT_ID"
+          
+          # Step 3: Update version-specific variables (version, url, sha256, git_commit)
           echo "Updating version-specific variables..."
           sed -i.bak \
             -e "s|version \"[^\"]*\"|version \"${VERSION}\"|g" \
             -e "s|url \"[^\"]*\"|url \"https://github.com/${{ github.repository }}/archive/refs/tags/v${VERSION}.tar.gz\"|g" \
             -e "s|sha256 \"[^\"]*\"|sha256 \"${SHA256}\"|g" \
+            -e "s|GIT_COMMIT = \"[^\"]*\"|GIT_COMMIT = \"${COMMIT_ID}\"|g" \
             "$FORMULA_TARGET"
           
           # Remove backup file

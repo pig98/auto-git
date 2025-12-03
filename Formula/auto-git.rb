@@ -11,9 +11,35 @@ class AutoGit < Formula
 
   depends_on "go" => :build
 
+  # Git commit ID (will be updated by GitHub Actions workflow)
+  GIT_COMMIT = "PLACEHOLDER_COMMIT"
+
   def install
+    # Use the commit ID from the constant (set by workflow)
+    # Fallback to version tag if not set
+    git_commit = GIT_COMMIT
+    if git_commit == "PLACEHOLDER_COMMIT" || git_commit.empty?
+      # Fallback: try to extract from URL or use version
+      if url.to_s.include?("/v")
+        tag_match = url.to_s.match(%r{/v([^/]+)\.tar\.gz})
+        git_commit = "v#{tag_match[1]}" if tag_match
+      end
+      git_commit = "v#{version}" if git_commit.empty? || git_commit == "PLACEHOLDER_COMMIT"
+    end
+
+    # Build time
+    build_time = Time.now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Build with version information
+    ldflags = [
+      "-s", "-w",
+      "-X main.version=#{version}",
+      "-X main.buildTime=#{build_time}",
+      "-X main.gitCommit=#{git_commit}"
+    ].join(" ")
+
     system "go", "build",
-           *std_go_args(output: bin/"auto-git", ldflags: "-s -w"),
+           *std_go_args(output: bin/"auto-git", ldflags: ldflags),
            "./"
   end
 
