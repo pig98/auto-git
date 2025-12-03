@@ -35,9 +35,11 @@ brew install auto-git
 首次启动前需要配置 `GIT_DIRS` 环境变量（其他配置已有默认值）：
 
 ```bash
-# 编辑服务配置
-brew services edit auto-git
+# 编辑服务配置 plist 文件
+nano ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
 ```
+
+**注意**：如果 plist 文件还不存在，需要先启动一次服务（`brew services start auto-git`），然后再编辑。
 
 在打开的 plist 文件中，找到 `EnvironmentVariables` → `GIT_DIRS`，修改为你的 Git 目录路径：
 
@@ -63,6 +65,17 @@ brew services edit auto-git
 4. **启动服务**：
 ```bash
 brew services start auto-git
+```
+
+**修改配置后重新加载服务**：
+
+⚠️ **重要**：不要使用 `brew services restart` 或 `brew services stop/start`，因为它们会重新生成 plist 文件并覆盖你手动编辑的配置（包括 `GIT_DIRS`）！
+
+正确的重新加载方式（修改 plist 文件后）：
+```bash
+# 使用 launchctl 重新加载（不会覆盖配置）
+launchctl unload ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
+launchctl load ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
 ```
 
 ### 从源码安装
@@ -128,17 +141,24 @@ launchctl load ~/Library/LaunchAgents/cn.dev.sc.autogit.plist
 ### 使用 Homebrew（推荐）
 
 ```bash
-# 启动服务
+# 启动服务（首次启动会生成 plist 文件）
 brew services start auto-git
 
 # 停止服务
 brew services stop auto-git
 
-# 重启服务
-brew services restart auto-git
-
 # 查看状态
 brew services list | grep auto-git
+```
+
+**修改配置后重新加载服务**：
+
+⚠️ **重要**：修改 plist 文件后，**必须使用 `launchctl` 重新加载**，不要使用 `brew services restart` 或 `brew services stop/start`，因为它们会重新生成 plist 文件并覆盖你手动编辑的配置（包括 `GIT_DIRS`）！
+
+```bash
+# 修改 plist 后，使用 launchctl 重新加载（唯一安全的方式）
+launchctl unload ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
+launchctl load ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
 ```
 
 ### 手动管理
@@ -172,7 +192,7 @@ launchctl list | grep autogit
 
 ### plist 文件完整示例
 
-运行 `brew services edit auto-git` 后，你会看到类似这样的配置：
+编辑 plist 文件 `~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist` 后，你会看到类似这样的配置：
 
 ```xml
 <key>EnvironmentVariables</key>
@@ -270,7 +290,9 @@ auto-git/
 
 ### 日志位置
 
-- Homebrew 安装：`$(brew --prefix)/var/log/auto-git.log` 和 `$(brew --prefix)/var/log/auto-git.err.log`
+- Homebrew 安装：
+  - 日志文件：`$(brew --prefix)/var/log/auto-git.log` 和 `$(brew --prefix)/var/log/auto-git.err.log`
+  - 工作目录：`$(brew --prefix)/var/auto-git`（服务的工作目录，安装时自动创建）
 - 手动安装：根据 plist 中配置的 `StandardOutPath` 和 `StandardErrorPath`
 
 ## 故障排查
@@ -338,10 +360,16 @@ chmod +x $(brew --prefix)/bin/auto-git
    - 使用 Formula 中的默认值填充环境变量
    - 使用 `launchctl load` 加载服务
 
-4. **编辑配置**（`brew services edit auto-git`）：
-   - 直接编辑已生成的 plist 文件
+4. **编辑配置**：
+   - 直接编辑已生成的 plist 文件：`~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist`
    - **用户只需修改 `GIT_DIRS`**，其他配置已有合理的默认值
-   - 修改后需要重启服务：`brew services restart auto-git`
+   - **重要**：修改 plist 文件后，必须使用 `launchctl` 重新加载服务使配置生效：
+     ```bash
+     # ⚠️ 不要使用 brew services restart 或 stop/start，它们会重新生成 plist 并覆盖你的修改！
+     # 使用 launchctl 重新加载（唯一安全的方式）
+     launchctl unload ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
+     launchctl load ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
+     ```
 
 ## 维护者指南
 
@@ -456,8 +484,8 @@ brew install auto-git
 which auto-git
 auto-git -v
 
-# 检查服务配置
-brew services edit auto-git
+# 检查服务配置（查看 plist 文件）
+cat ~/Library/LaunchAgents/homebrew.mxcl.auto-git.plist
 ```
 
 #### 清理 Homebrew 缓存（如果重新安装后版本信息不对）

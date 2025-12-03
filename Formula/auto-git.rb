@@ -41,6 +41,9 @@ class AutoGit < Formula
     system "go", "build",
            *std_go_args(output: bin/"auto-git", ldflags: ldflags),
            "./"
+    
+    # Create working directory for service
+    (var/"auto-git").mkpath
   end
 
   service do
