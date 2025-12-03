@@ -1,0 +1,37 @@
+# 编译产物
+auto-git
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# 日志文件
+*.log
+auto-git.out.log
+auto-git.err.log
+/tmp/auto-git*.log
+
+# 配置文件（保留示例文件）
+*.plist
+!*.plist.example
+*.bak
+*.plist.bak
+
+# Go 相关
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# GitHub Actions artifacts
+.github/workflows/*.bak
+
