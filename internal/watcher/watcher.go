@@ -56,7 +56,7 @@ func WatchGitDir(gitDir string) error {
 			if !ok {
 				return nil
 			}
-			handleEvent(event, absPath)
+			handleEvent(event, absPath, watcher)
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return nil
@@ -88,25 +88,52 @@ func addDirRecursive(watcher *fsnotify.Watcher, root string) error {
 	})
 }
 
-func handleEvent(event fsnotify.Event, gitDir string) {
+func handleEvent(event fsnotify.Event, gitDir string, watcher *fsnotify.Watcher) {
 	// Ignore .git directory changes
 	if strings.Contains(event.Name, "/.git/") {
 		return
 	}
 
-	// Ignore files/directories in .gitignore
+	// For Remove events, we can't check if the path exists, but we can still check .gitignore
+	// For other events, check if the path is ignored by .gitignore
 	relPath, err := filepath.Rel(gitDir, event.Name)
-	if err == nil && git.IsIgnoredByGit(gitDir, relPath) {
-		logger.Debug("Ignored by .gitignore, skipping change: %s (in %s)", relPath, gitDir)
-		return
+	if err == nil {
+		// git check-ignore works even for removed paths (checks Git index)
+		if git.IsIgnoredByGit(gitDir, relPath) {
+			logger.Debug("Ignored by .gitignore, skipping change: %s (in %s)", relPath, gitDir)
+			return
+		}
 	}
 
-	// Ignore temporary files
-	if strings.HasSuffix(event.Name, "~") || strings.HasSuffix(event.Name, ".swp") {
-		return
+	// Ignore temporary files (only for non-Remove events, as removed files won't have these suffixes)
+	if event.Op&fsnotify.Remove != fsnotify.Remove {
+		if strings.HasSuffix(event.Name, "~") || strings.HasSuffix(event.Name, ".swp") {
+			return
+		}
 	}
 
-	// Use quiet-period mechanism: reset timer on each change
+	// Handle directory creation: add new directories to watch list
+	if event.Op&fsnotify.Create == fsnotify.Create {
+		info, err := os.Stat(event.Name)
+		if err == nil && info.IsDir() {
+			// New directory created, add it to watch list recursively
+			if err := addDirRecursive(watcher, event.Name); err != nil {
+				logger.Error("Failed to add new directory to watch: %s, %v", event.Name, err)
+			} else {
+				logger.Debug("Added new directory to watch: %s", event.Name)
+			}
+		}
+	}
+
+	// Handle directory removal: fsnotify automatically removes deleted directories from watch list
+	// We just need to trigger the sync, which will be handled by ScheduleQuietSync below
+	if event.Op&fsnotify.Remove == fsnotify.Remove {
+		logger.Debug("Directory or file removed: %s", event.Name)
+		// Note: fsnotify automatically removes deleted directories from the watch list,
+		// so we don't need to manually remove them
+	}
+
+	// Use quiet-period mechanism: reset timer on each change (including Create, Write, Remove, Rename)
 	ScheduleQuietSync(gitDir, "File change", event.Name)
 }
 
