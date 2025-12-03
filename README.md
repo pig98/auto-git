@@ -363,10 +363,33 @@ GitHub Actions 会自动：
 - 提交并推送到 homebrew-tap
 
 **注意**：需要在 GitHub 仓库设置中添加 Secret：
-- `HOMEBREW_TAP_TOKEN`：用于推送 homebrew-tap 仓库的 Personal Access Token
-  - 创建方式：GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-  - 权限：需要 `repo` 权限（用于推送 homebrew-tap 仓库）
-  - 添加位置：仓库 Settings → Secrets and variables → Actions → New repository secret
+
+##### 步骤 1：创建 Personal Access Token
+
+1. 登录 GitHub，点击右上角头像 → **Settings**
+2. 左侧菜单滚动到底部，点击 **Developer settings**
+3. 点击 **Personal access tokens** → **Tokens (classic)**
+4. 点击 **Generate new token** → **Generate new token (classic)**
+5. 填写信息：
+   - **Note**（备注）：`Homebrew Tap Token`（或任意描述）
+   - **Expiration**（过期时间）：选择合适的时间（建议 90 天或更长）
+   - **Select scopes**（权限范围）：勾选 **`repo`**（完整仓库权限）
+     - 这会自动勾选所有 repo 相关权限，包括读写权限
+6. 点击 **Generate token**
+7. **重要**：立即复制生成的 token（只显示一次，关闭后无法再查看）
+
+##### 步骤 2：添加 Secret 到仓库
+
+1. 进入你的源码仓库：`https://github.com/pig98/auto-git`
+2. 点击仓库顶部的 **Settings** 标签
+3. 左侧菜单点击 **Secrets and variables** → **Actions**
+4. 点击 **New repository secret**
+5. 填写信息：
+   - **Name**：`HOMEBREW_TAP_TOKEN`
+   - **Secret**：粘贴刚才复制的 token
+6. 点击 **Add secret**
+
+完成！现在 GitHub Actions 可以使用这个 token 来推送 homebrew-tap 仓库了。
 
 #### 验证发布流程
 

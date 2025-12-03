@@ -95,26 +95,31 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           SHA256="${{ steps.sha256.outputs.sha256 }}"
-          FORMULA_FILE="homebrew-tap/Formula/auto-git.rb"
+          FORMULA_SOURCE="Formula/auto-git.rb"
+          FORMULA_TARGET="homebrew-tap/Formula/auto-git.rb"
           
-          # Create Formula file if it doesn't exist
-          if [ ! -f "$FORMULA_FILE" ]; then
-            mkdir -p "$(dirname "$FORMULA_FILE")"
-            cp Formula/auto-git.rb "$FORMULA_FILE"
-          fi
+          # Ensure target directory exists
+          mkdir -p "$(dirname "$FORMULA_TARGET")"
           
-          # Update version, url, and sha256 (macOS sed requires backup extension)
+          # Step 1: Copy template from source repository (this ensures any Formula changes are synced)
+          echo "Copying Formula template from source repository..."
+          cp "$FORMULA_SOURCE" "$FORMULA_TARGET"
+          
+          # Step 2: Update version-specific variables (version, url, sha256)
+          echo "Updating version-specific variables..."
           sed -i.bak \
             -e "s|version \"[^\"]*\"|version \"${VERSION}\"|g" \
             -e "s|url \"[^\"]*\"|url \"https://github.com/${{ github.repository }}/archive/refs/tags/v${VERSION}.tar.gz\"|g" \
             -e "s|sha256 \"[^\"]*\"|sha256 \"${SHA256}\"|g" \
-            "$FORMULA_FILE"
+            "$FORMULA_TARGET"
           
           # Remove backup file
-          rm -f "$FORMULA_FILE.bak"
+          rm -f "$FORMULA_TARGET.bak"
           
-          echo "Formula updated:"
-          cat "$FORMULA_FILE"
+          echo "Formula updated successfully:"
+          echo "---"
+          cat "$FORMULA_TARGET"
+          echo "---"
 
       - name: Commit and push to homebrew-tap
         run: |
